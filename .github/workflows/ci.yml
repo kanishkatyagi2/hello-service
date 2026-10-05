@@ -46,7 +46,27 @@ jobs:
             --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
             --label org.opencontainers.image.revision=${{ github.sha }} \
             -t $IMAGE:${{ github.sha }} .
-
+      
+      - name: Smoke test image
+        run: |
+          docker run -d --name smoke -p 3000:3000 $IMAGE:${{ github.sha }}
+          for i in $(seq 1 15); do
+            if [ "$(docker inspect -f '{{.State.Running}}' smoke)" != "true" ]; then
+              echo "Container exited before becoming healthy:"
+              docker logs smoke
+              exit 1
+            fi
+            if curl -fsS http://localhost:3000/healthz; then
+              echo
+              echo "Smoke test passed"
+              docker rm -f smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "No healthy response after 30s. Container logs:"
+          docker logs smoke
+          exit 1
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
