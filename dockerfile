@@ -11,7 +11,7 @@ WORKDIR /app
 # Run as non-root — security practice we'll lean on again in Phase 11 (RBAC/security)
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=builder /app/node_modules ./node_modules
-COPY package.json index.js app.js ./
+COPY package.json index.js ./
 USER appuser
 
 EXPOSE 3000
